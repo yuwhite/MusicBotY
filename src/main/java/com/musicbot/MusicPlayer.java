@@ -8,7 +8,8 @@ import java.net.URL;
 import java.net.URLConnection;
 
 public class MusicPlayer {
-    private Player player;
+    private Player mp3Player;
+    private M4APlayer m4aPlayer;
     private boolean isPlaying;
     private Thread playerThread;
     private final GoogleDriveMusicProvider musicProvider;
@@ -16,6 +17,7 @@ public class MusicPlayer {
     public MusicPlayer(GoogleDriveMusicProvider musicProvider) {
         this.isPlaying = false;
         this.musicProvider = musicProvider;
+        this.m4aPlayer = new M4APlayer();
     }
 
     public void play(String url, String extension) {
@@ -26,32 +28,38 @@ public class MusicPlayer {
 
             URLConnection connection = new URL(url).openConnection();
             connection.addRequestProperty("Authorization", "Bearer " + musicProvider.getAccessToken());
-            InputStream audioStream = new BufferedInputStream(connection.getInputStream());
-            
-            player = new Player(audioStream);
-            isPlaying = true;
 
-            // 別スレッドで再生
-            playerThread = new Thread(() -> {
-                try {
-                    player.play();
-                } catch (Exception e) {
-                    System.out.println("音楽の再生中にエラーが発生しました: " + e.getMessage());
-                } finally {
-                    isPlaying = false;
-                    player.close();
-                }
-            });
-            playerThread.start();
+            if ("m4a".equalsIgnoreCase(extension)) {
+                // M4Aファイルの再生
+                m4aPlayer.play(url);
+                isPlaying = true;
+            } else {
+                // MP3ファイルの再生
+                InputStream audioStream = new BufferedInputStream(connection.getInputStream());
+                mp3Player = new Player(audioStream);
+                isPlaying = true;
 
+                // 別スレッドで再生
+                playerThread = new Thread(() -> {
+                    try {
+                        mp3Player.play();
+                    } catch (Exception e) {
+                        System.out.println("音楽の再生中にエラーが発生しました: " + e.getMessage());
+                    } finally {
+                        isPlaying = false;
+                        mp3Player.close();
+                    }
+                });
+                playerThread.start();
+            }
         } catch (Exception e) {
             System.out.println("音楽の再生中にエラーが発生しました: " + e.getMessage());
         }
     }
 
     public void stop() {
-        if (player != null) {
-            player.close();
+        if (mp3Player != null) {
+            mp3Player.close();
             if (playerThread != null) {
                 playerThread.interrupt();
                 try {
@@ -60,8 +68,11 @@ public class MusicPlayer {
                     // 無視
                 }
             }
-            isPlaying = false;
         }
+        if (m4aPlayer != null) {
+            m4aPlayer.stop();
+        }
+        isPlaying = false;
     }
 
     public boolean isPlaying() {
