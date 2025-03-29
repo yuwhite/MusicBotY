@@ -1,0 +1,4 @@
+com\musicbot\MusicBotY.class
+com\musicbot\MusicPlayer.class
+com\musicbot\MusicBotListener.class
+com\musicbot\GoogleDriveMusicProvider.class
