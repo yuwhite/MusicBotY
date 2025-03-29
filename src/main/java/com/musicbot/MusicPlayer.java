@@ -18,7 +18,7 @@ public class MusicPlayer {
         this.musicProvider = musicProvider;
     }
 
-    public void play(String url) {
+    public void play(String url, String extension) {
         try {
             if (isPlaying) {
                 stop();

@@ -12,6 +12,7 @@ public class MusicBotY {
     private final JTextField searchField;
     private final JButton playButton;
     private final JButton stopButton;
+    private final JLabel statusLabel;
 
     public MusicBotY(String credentialsPath) throws IOException, GeneralSecurityException {
         this.musicProvider = new GoogleDriveMusicProvider(credentialsPath);
@@ -20,7 +21,7 @@ public class MusicBotY {
         // GUIの設定
         frame = new JFrame("MusicBotY");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 150);
+        frame.setSize(400, 200);
         frame.setLayout(new BorderLayout(10, 10));
 
         // 検索パネル
@@ -37,9 +38,17 @@ public class MusicBotY {
         buttonPanel.add(stopButton);
         frame.add(buttonPanel, BorderLayout.CENTER);
 
+        // ステータスラベル
+        statusLabel = new JLabel(" ");
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        frame.add(statusLabel, BorderLayout.SOUTH);
+
         // イベントリスナーの設定
         playButton.addActionListener(e -> searchAndPlay());
-        stopButton.addActionListener(e -> musicPlayer.stop());
+        stopButton.addActionListener(e -> {
+            musicPlayer.stop();
+            statusLabel.setText("再生を停止しました");
+        });
 
         frame.setVisible(true);
     }
@@ -52,15 +61,18 @@ public class MusicBotY {
         }
 
         try {
-            musicProvider.searchAndPlay(query, url -> {
+            musicProvider.searchAndPlay(query, (url, extension) -> {
                 if (url != null) {
-                    musicPlayer.play(url);
+                    musicPlayer.play(url, extension);
+                    statusLabel.setText("再生中: " + query + " (" + extension.toUpperCase() + ")");
                 } else {
                     JOptionPane.showMessageDialog(frame, "音楽ファイルが見つかりませんでした。");
+                    statusLabel.setText("ファイルが見つかりません");
                 }
             });
         } catch (IOException e) {
             JOptionPane.showMessageDialog(frame, "エラーが発生しました: " + e.getMessage());
+            statusLabel.setText("エラーが発生しました");
         }
     }
 

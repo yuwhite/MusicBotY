@@ -19,9 +19,9 @@ public class MusicBotListener {
         if (command.startsWith("!play ")) {
             String query = command.substring(6);
             try {
-                musicProvider.searchAndPlay(query, url -> {
+                musicProvider.searchAndPlay(query, (url, extension) -> {
                     if (url != null) {
-                        musicPlayer.play(url);
+                        musicPlayer.play(url, extension);
                     } else {
                         System.out.println("音楽ファイルが見つかりませんでした。");
                     }

@@ -11,6 +11,8 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -18,7 +20,7 @@ import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public class GoogleDriveMusicProvider {
     private final Drive driveService;
@@ -62,21 +64,31 @@ public class GoogleDriveMusicProvider {
             .build();
     }
 
-    public void searchAndPlay(String query, Consumer<String> onUrlFound) throws IOException {
+    public void searchAndPlay(String query, BiConsumer<String, String> onFileFound) throws IOException {
         List<File> files = driveService.files().list()
                 .setQ("name contains '" + query + "' and (mimeType contains 'audio/' or mimeType contains 'video/')")
                 .setSpaces("drive")
+                .setFields("files(id, name, mimeType)")
                 .execute()
                 .getFiles();
 
         if (files.isEmpty()) {
-            System.out.println("音楽ファイルが見つかりませんでした。");
+            onFileFound.accept(null, null);
             return;
         }
 
         File musicFile = files.get(0);
         String downloadUrl = String.format("https://www.googleapis.com/drive/v3/files/%s?alt=media", musicFile.getId());
-        onUrlFound.accept(downloadUrl);
+        String extension = getFileExtension(musicFile.getName());
+        onFileFound.accept(downloadUrl, extension);
+    }
+
+    private String getFileExtension(String fileName) {
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot > 0) {
+            return fileName.substring(lastDot + 1).toLowerCase();
+        }
+        return "";
     }
 
     public String getAccessToken() throws IOException {
